@@ -58,21 +58,29 @@ TEST_P(skip_list_test, insert_315)
 	EXPECT_TRUE ( x.insert(1, (void*)1UL ) );
 	EXPECT_TRUE ( x.insert(5, (void*)1UL ) );
 
-	x.dump(std::cout, "\n") << std::endl;
+	//x.dump(std::cout, "\n") << std::endl;
 
+	auto v = x.to_vector();
+	ASSERT_EQ( 3, v.size() );
 	if ( GetParam() == 0 )
 	{
-		//EXPECT_THAT( ElementsAre({1,3 5}), x);
+		EXPECT_EQ( 1, v[0].first );
+		EXPECT_EQ( 3, v[1].first );
+		EXPECT_EQ( 5, v[2].first );
 	}
 	else
 	{
-		//EXPECT_THAT( ElementsAre({5,3,1}), x);
+		EXPECT_EQ( 5, v[0].first );
+		EXPECT_EQ( 3, v[1].first );
+		EXPECT_EQ( 1, v[2].first );
 	}
 }
 
 TEST_P(skip_list_test, insert_duplicates)
 {
 	test_type x(GetParam());
+
+	ASSERT_FALSE( x.allow_duplicates );
 
 	EXPECT_TRUE ( x.insert(1, (void*)1UL ) );
 	EXPECT_FALSE( x.insert(1, (void*)1UL ) );
@@ -83,6 +91,22 @@ TEST_P(skip_list_test, insert_duplicates)
 	EXPECT_FALSE( x.insert(1, (void*)1UL ) );
 	EXPECT_FALSE( x.insert(3, (void*)1UL ) );
 	EXPECT_FALSE( x.insert(5, (void*)1UL ) );
+	//x.dump(std::cout, "\n") << std::endl;
+
+	auto v = x.to_vector();
+	ASSERT_EQ( 3, v.size() );
+	if ( GetParam() == 0 )
+	{
+		EXPECT_EQ( 1, v[0].first );
+		EXPECT_EQ( 3, v[1].first );
+		EXPECT_EQ( 5, v[2].first );
+	}
+	else
+	{
+		EXPECT_EQ( 5, v[0].first );
+		EXPECT_EQ( 3, v[1].first );
+		EXPECT_EQ( 1, v[2].first );
+	}
 }
 
 
@@ -94,7 +118,7 @@ TEST_P(skip_list_test, contains)
 	ASSERT_TRUE( x.insert(3, (void*)1UL ) );
 	ASSERT_TRUE( x.insert(5, (void*)1UL ) );
 
-	x.dump(std::cout, "\n") << std::endl;
+	//x.dump(std::cout, "\n") << std::endl;
 
 	EXPECT_TRUE( x.contains(1) );
 	EXPECT_TRUE( x.contains(3) );
@@ -106,7 +130,52 @@ TEST_P(skip_list_test, contains)
 	EXPECT_FALSE( x.contains(6) );
 }
 
-TEST_P(skip_list_test, insert_one_block)
+TEST_P(skip_list_test, insert_10)
+{
+	test_type x(GetParam());
+	std::array<int, 10> v { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+
+	EXPECT_TRUE( x.empty() );
+
+	for(int i : v)
+	{
+		ASSERT_TRUE( x.insert(i, (void*)(size_t)i ) ) << "i=" << i;
+	}
+	EXPECT_FALSE( x.empty() );
+	EXPECT_EQ( v.size(), x.size() );
+	EXPECT_EQ( x.size(), x.count() );
+
+	//x.dump(std::cout, "\n", 10) << std::endl;
+
+	for(int i : v)
+	{
+		EXPECT_TRUE( x.contains(i) ) << "i=" << i;
+	}
+}
+
+TEST_P(skip_list_test, insert_10_perm)
+{
+	test_type x(GetParam());
+	std::array<int, 10> v { 5, 2, 9, 4, 1, 6, 7, 10, 3, 8 };
+
+	EXPECT_TRUE( x.empty() );
+
+	for(int i : v)
+	{
+		ASSERT_TRUE( x.insert(i, (void*)(size_t)i ) ) << "i=" << i;
+	}
+	EXPECT_FALSE( x.empty() );
+	EXPECT_EQ( v.size(), x.size() );
+	EXPECT_EQ( x.size(), x.count() );
+
+	//x.dump(std::cout, "\n", 10) << std::endl;
+
+	for(int i : v)
+	{
+		EXPECT_TRUE( x.contains(i) ) << "i=" << i;
+	}
+}
+TEST_P(skip_list_test, insert_1000)
 {
 	test_type x(GetParam());
 	int N = 1000; //test_type::max_elements_in_block();
@@ -121,7 +190,7 @@ TEST_P(skip_list_test, insert_one_block)
 	EXPECT_EQ( N, x.size() );
 	EXPECT_EQ( x.size(), x.count() );
 
-	x.dump(std::cout, "\n", 10) << std::endl;
+	//x.dump(std::cout, "\n") << std::endl;
 
 	for(int i = 1; i <= N; ++i)
 	{
@@ -129,17 +198,16 @@ TEST_P(skip_list_test, insert_one_block)
 	}
 }
 
-/*
-TEST_P(skip_list_test, insert_one_block_rev)
+TEST_P(skip_list_test, insert_1000_rev)
 {
 	test_type x(GetParam());
-	int N = test_type::max_elements_in_block();
+	int N = 1000;
 
 	EXPECT_TRUE( x.empty() );
 
 	for(int i = N; i >= 1; --i)
 	{
-		ASSERT_TRUE( x.insert(i, (void*)(size_t)i ) );
+		ASSERT_TRUE( x.insert(i, (void*)(size_t)i ) ) << "i=" << i;
 	}
 	EXPECT_FALSE( x.empty() );
 	EXPECT_EQ( N, x.size() );
@@ -147,59 +215,48 @@ TEST_P(skip_list_test, insert_one_block_rev)
 
 	for(int i = 1; i <= N; ++i)
 	{
-		EXPECT_TRUE( x.contains(i) );
+		EXPECT_TRUE( x.contains(i) ) << "i=" << i;
 	}
 }
 
-TEST_P(skip_list_test, insert_two_blocks)
+TEST_P(skip_list_test, insert_1000_dup)
 {
 	test_type x(GetParam());
-	int N = 2*test_type::max_elements_in_block();
+	int N = 1000; //test_type::max_elements_in_block();
 
 	EXPECT_TRUE( x.empty() );
 
-	for(int i = 1; i <= N; ++i)
-	{
-		ASSERT_TRUE( x.insert(i, (void*)(size_t)i ) );
-	}
-	EXPECT_FALSE( x.empty() );
-	EXPECT_EQ( N, x.size() );
-	EXPECT_EQ( x.size(), x.count() );
+	ASSERT_FALSE( x.allow_duplicates );
 
 	for(int i = 1; i <= N; ++i)
 	{
-		EXPECT_TRUE( x.contains(i) );
+		ASSERT_TRUE( x.insert(i, (void*)(size_t)i ) ) << "i=" << i;
+		ASSERT_FALSE( x.insert(i, (void*)(size_t)i ) ) << "i=" << i;
 	}
-}
-
-TEST_P(skip_list_test, insert_two_blocks_rev)
-{
-	test_type x(GetParam());
-	int N = 2*test_type::max_elements_in_block();
-
-	EXPECT_TRUE( x.empty() );
-
 	for(int i = N; i >= 1; --i)
 	{
-		ASSERT_TRUE( x.insert(i, (void*)(size_t)i ) );
+		ASSERT_FALSE( x.insert(i, (void*)(size_t)i ) ) << "i=" << i;
 	}
 	EXPECT_FALSE( x.empty() );
 	EXPECT_EQ( N, x.size() );
 	EXPECT_EQ( x.size(), x.count() );
 
+	//x.dump(std::cout, "\n") << std::endl;
+
 	for(int i = 1; i <= N; ++i)
 	{
-		EXPECT_TRUE( x.contains(i) );
+		EXPECT_TRUE( x.contains(i) ) << "i=" << i;
 	}
-	}
-*/
+}
 
 TEST_P(skip_list_test, erase_when_empty)
 {
 	test_type x(GetParam());
 
 	EXPECT_TRUE( x.empty() );
-	EXPECT_EQ( nullptr, x.erase(1) );
+	EXPECT_EQ( nullptr, x.erase(1).first );
+	EXPECT_EQ( 0, x.erase(1).second );
+	EXPECT_TRUE( x.empty() );
 }
 
 TEST_P(skip_list_test, erase_1_after_insert_1)
@@ -212,10 +269,58 @@ TEST_P(skip_list_test, erase_1_after_insert_1)
 	EXPECT_FALSE( x.empty() );
 	EXPECT_TRUE( x.contains(1) );
 
-	EXPECT_EQ( (void*)1UL, x.erase(1) );
+	EXPECT_EQ( (void*)1UL, x.erase(1).first );
 	EXPECT_TRUE( x.empty() );
 	EXPECT_FALSE( x.contains(1) );
 
-	EXPECT_EQ( nullptr, x.erase(1) );
+	EXPECT_EQ( nullptr, x.erase(1).first );
 }
 
+TEST_P(skip_list_test, insert_and_erase_1000)
+{
+	test_type x(GetParam());
+	int N = 1000; //test_type::max_elements_in_block();
+
+	EXPECT_TRUE( x.empty() );
+
+	ASSERT_FALSE( x.allow_duplicates );
+
+	for(int i = 1; i <= N; ++i)
+	{
+		ASSERT_TRUE( x.insert(i, (void*)(size_t)i ) ) << "i=" << i;
+	}
+	ASSERT_FALSE( x.empty() );
+	ASSERT_EQ( N, x.size() );
+
+	//x.dump(std::cout, "\n") << std::endl;
+
+	for(int i = 1; i <= N; ++i)
+	{
+		EXPECT_EQ( (void*)(size_t)i, x.erase(i).first ) << "i=" << i;
+		//x.dump(std::cout << "$$", "\n") << std::endl;
+	}
+	EXPECT_TRUE( x.empty() );
+	EXPECT_EQ(0, x.size() );
+}
+
+TEST_P(skip_list_test, erase_10_perm)
+{
+	test_type x(GetParam());
+	std::array<int, 10> v { 5, 2, 9, 4, 1, 6, 7, 10, 3, 8 };
+
+	int N = 10;
+
+	for(int i = 1; i <= N; ++i)
+	{
+		ASSERT_TRUE( x.insert(i, (void*)(size_t)i ) ) << "i=" << i;
+	}
+	ASSERT_FALSE( x.empty() );
+	ASSERT_EQ( N, x.size() );
+
+	for(int i : v)
+	{
+		EXPECT_EQ( (void*)(size_t)i, x.erase(i).first ) << "i=" << i;
+	}
+	EXPECT_TRUE( x.empty() );
+	EXPECT_EQ(0, x.size() );
+}
